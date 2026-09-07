@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沃恩員工考核平台</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
+
+        .login-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        .login-box {
+            background: #fff; border-radius: 12px; padding: 40px; width: 360px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15); text-align: center;
+        }
+        .login-box h2 { margin-bottom: 20px; font-size: 22px; }
+        .login-box input {
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px;
+            font-size: 16px; margin-bottom: 16px;
+        }
+        .login-box button {
+            width: 100%; padding: 12px; background: #4a90d9; color: #fff;
+            border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
+        }
+        .login-box button:hover { background: #357abd; }
+        .login-error { color: #e74c3c; font-size: 14px; margin-top: 8px; }
+
+        .main-container { display: none; max-width: 900px; margin: 30px auto; padding: 0 16px; }
+
+        .header {
+            background: linear-gradient(135deg, #4a90d9, #357abd); color: #fff;
+            border-radius: 12px; padding: 30px; text-align: center; margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(74,144,217,0.3);
+        }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; }
+
+        .form-section {
+            background: #fff; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px;
+        }
+        .form-section h2 {
+            font-size: 18px; color: #4a90d9; margin-bottom: 16px;
+            padding-bottom: 8px; border-bottom: 2px solid #e8eef5;
+        }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .info-grid .full-width { grid-column: 1 / -1; }
+        .form-group label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; font-weight: 600; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 15px; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: #4a90d9;
+        }
+
+        .category-group { margin-bottom: 20px; }
+        .category-title {
+            font-size: 16px; font-weight: 700; color: #2c3e50; margin-bottom: 12px;
+            padding: 10px 14px; background: #e8f0fe; border-radius: 8px;
+        }
+
+        .question-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .question-item:last-child { border-bottom: none; }
+        .question-label { flex: 1; }
+        .question-label .q-name { font-weight: 600; font-size: 15px; }
+        .question-label .q-desc { font-size: 13px; color: #888; margin-top: 2px; }
+
+        .score-options { display: flex; gap: 6px; flex-shrink: 0; margin-left: 16px; }
+        .score-btn {
+            width: 44px; height: 38px; border: 2px solid #ddd; border-radius: 8px;
+            background: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; color: #555;
+        }
+        .score-btn:hover { border-color: #4a90d9; color: #4a90d9; }
+        .score-btn.selected { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+
+        .result-box {
+            background: #e8f5e9; border: 2px solid #4caf50; border-radius: 12px;
+            padding: 24px; margin-top: 20px; display: none;
+        }
+        .result-box h2 { color: #2e7d32; border-bottom-color: #a5d6a7; }
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .result-table td { padding: 10px 12px; border-bottom: 1px solid #c8e6c9; }
+        .result-table td:first-child { font-weight: 600; width: 40%; }
+        .result-table tr:last-child td { border-bottom: none; }
+
+        .submit-btn {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #4caf50, #43a047);
+            color: #fff; border: none; border-radius: 10px; font-size: 17px;
+            font-weight: 700; cursor: pointer; margin-top: 16px; transition: transform 0.15s;
+        }
+        .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(76,175,80,0.4); }
+
+        .btn-group { display: flex; gap: 12px; margin-top: 16px; }
+        .btn-secondary {
+            flex: 1; padding: 12px; background: #fff; color: #4a90d9; border: 2px solid #4a90d9;
+            border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+        }
+        .btn-secondary:hover { background: #e8f0fe; }
+        .btn-print {
+            flex: 1; padding: 12px; background: #4a90d9; color: #fff; border: none;
+            border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+        }
+        .btn-print:hover { background: #357abd; }
+
+        @media (max-width: 640px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .question-item { flex-direction: column; align-items: flex-start; }
+            .score-options { margin-left: 0; margin-top: 8px; }
+        }
+
+        @media print {
+            body { background: #fff; }
+            .login-overlay, .header, .form-section, .submit-btn, .btn-group, .result-box { display: none !important; }
+            .main-container { display: block !important; max-width: 100%; margin: 0; padding: 20px; }
+            .print-result { display: block !important; }
+            .print-result h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
+            .print-result table { width: 100%; border-collapse: collapse; }
+            .print-result td { padding: 8px; border: 1px solid #333; font-size: 14px; }
+            .print-result td:first-child { font-weight: 600; width: 40%; background: #f5f5f5; }
+        }
+        .print-result { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2>🛡️ 主管登入</h2>
+        <input type="password" id="passwordInput" placeholder="請輸入主管密碼" onkeydown="if(event.key==='Enter')doLogin()">
+        <button onclick="doLogin()">登入</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- 主畫面 -->
+<div class="main-container" id="mainContainer">
+    <div class="header">
+        <h1>📝 沃恩員工考核平台</h1>
+        <p>員工績效考核表單</p>
+    </div>
+
+    <!-- 基本資料 -->
+    <div class="form-section">
+        <h2>📋 基本資料</h2>
+        <div class="info-grid">
+            <div class="form-group">
+                <label>考核人姓名</label>
+                <input type="text" id="reviewer" placeholder="請輸入考核人姓名">
+            </div>
+            <div class="form-group">
+                <label>考核週期</label>
+                <input type="text" id="reviewPeriod" placeholder="例：2025 Q2">
+            </div>
+            <div class="form-group full-width">
+                <label>考核月份</label>
+                <input type="text" id="reviewMonths" placeholder="例：4,5,6月">
+            </div>
+            <div class="form-group full-width">
+                <label>受評對象</label>
+                <select id="reviewee">
+                    <option value="">請選擇</option>
+                    <option value="林婉雯">林婉雯</option>
+                    <option value="陳燕惠">陳燕惠</option>
+                    <option value="吳佩慈">吳佩慈</option>
+                    <option value="張怡如">張怡如</option>
+                    <option value="李芷涵">李芷涵</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 考核項目 -->
+    <div class="form-section">
+        <h2>📊 考核項目評分</h2>
+
+        <!-- AA01 達成率 -->
+        <div class="category-group">
+            <div class="category-title">AA01 達成率</div>
+            <div id="aa01Questions"></div>
+        </div>
+
+        <!-- AA02 達成率 -->
+        <div class="category-group">
+            <div class="category-title">AA02 達成率</div>
+            <div id="aa02Questions"></div>
+        </div>
+
+        <!-- 綜合評估 -->
+        <div class="category-group">
+            <div class="category-title">綜合評估項目</div>
+            <div id="generalQuestions"></div>
+        </div>
+
+        <!-- 補充加/扣分 -->
+        <div class="form-group" style="margin-top: 16px;">
+            <label>補充加/扣分（可不填）</label>
+            <input type="number" id="bonus" value="0" step="1">
+        </div>
+    </div>
+
+    <button class="submit-btn" onclick="calculateResult()">✅ 計算考核結果</button>
+
+    <!-- 結果區 -->
+    <div class="result-box" id="resultBox">
+        <h2>📄 考核結果</h2>
+        <table class="result-table">
+            <tr><td>考核人</td><td id="rReviewer"></td></tr>
+            <tr><td>受評者</td><td id="rReviewee"></td></tr>
+            <tr><td>考核週期</td><td id="rPeriod"></td></tr>
+            <tr><td>考核月份</td><td id="rMonths"></td></tr>
+            <tr><td>AA01 達成率評分</td><td id="rAA01"></td></tr>
+            <tr><td>AA02 達成率評分</td><td id="rAA02"></td></tr>
+            <tr><td>綜合評估評分</td><td id="rGeneral"></td></tr>
+            <tr><td>補充加/扣分</td><td id="rBonus"></td></tr>
+        </table>
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="resetForm()">🔄 重新填寫</button>
+            <button class="btn-print" onclick="window.print()">🖨️ 列印</button>
+        </div>
+    </div>
+
+    <!-- 列印用隱藏區塊 -->
+    <div class="print-result" id="printArea"></div>
+</div>
+
+<script>
+const PASSWORD = "91166964";
+const OPTIONS = ["++", "+", "無", "-", "--"];
+
+const AA01 = [
+    "第1月AA01達成率", "第2月AA01達成率", "第3月AA01達成率",
+    "第4月AA01達成率", "第5月AA01達成率", "第6月AA01達成率"
+];
+const AA02 = [
+    "第1月AA02達成率", "第2月AA02達成率", "第3月AA02達成率",
+    "第4月AA02達成率", "第5月AA02達成率", "第6月AA02達成率"
+];
+const GENERAL = [
+    { q: "辦理跨專業討論會議", desc: "完成+、無須辦理x、未完成-" },
+    { q: "辦理區域聯繫會議", desc: "完成+、無須辦理x、未完成-" },
+    { q: "表揚及客訴(須說明)", desc: "獲表揚(依情節+或++)、無x、客訴(依情節-或--)" },
+    { q: "工作配合度", desc: "良好++、合格+、待加強-、不理想--" },
+    { q: "溝通協調能力", desc: "良好++、合格+、待加強-、不理想--" },
+    { q: "專業知能", desc: "良好++、合格+、待加強-、不理想--" },
+];
+
+function doLogin() {
+    const pw = document.getElementById("passwordInput").value;
+    if (pw === PASSWORD) {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("mainContainer").style.display = "block";
+    } else {
+        document.getElementById("loginError").textContent = "密碼錯誤，請重新輸入。";
+    }
+}
+
+function createScoreButtons(container, questions, prefix) {
+    const el = document.getElementById(container);
+    questions.forEach(q => {
+        const name = (typeof q === "object") ? q.q : q;
+        const desc = (typeof q === "object") ? q.desc : "95%以上++、90-94%+、85-89%以上-、80-84%--";
+        const div = document.createElement("div");
+        div.className = "question-item";
+        div.innerHTML = `
+            <div class="question-label">
+                <div class="q-name">${name}</div>
+                <div class="q-desc">${desc}</div>
+            </div>
+            <div class="score-options" data-name="${prefix}_${name}">
+                ${OPTIONS.map((o, i) => `<button type="button" class="score-btn" data-value="${o}" onclick="selectScore(this)">${o}</button>`).join("")}
+            </div>`;
+        el.appendChild(div);
+    });
+}
+
+function selectScore(btn) {
+    const group = btn.parentElement;
+    group.querySelectorAll(".score-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+}
+
+function getGroupScore(containerId) {
+    const groups = document.querySelectorAll(`#${containerId} .score-options`);
+    const scores = [];
+    groups.forEach(g => {
+        const sel = g.querySelector(".selected");
+        scores.push(sel ? sel.dataset.value : "無");
+    });
+    return scores;
+}
+
+function calcCategoryScore(scores) {
+    let sum = 0;
+    scores.forEach(s => {
+        if (s === "++") sum += 2;
+        else if (s === "+") sum += 1;
+        else if (s === "-") sum -= 1;
+        else if (s === "--") sum -= 2;
+    });
+    return sum;
+}
+
+function formatScores(scores) {
+    return scores.join("、");
+}
+
+function calculateResult() {
+    const reviewer = document.getElementById("reviewer").value.trim();
+    const period = document.getElementById("reviewPeriod").value.trim();
+    const months = document.getElementById("reviewMonths").value.trim();
+    const reviewee = document.getElementById("reviewee").value;
+    const bonus = parseInt(document.getElementById("bonus").value) || 0;
+
+    if (!reviewer || !period || !months || !reviewee) {
+        alert("請填寫所有基本資料！");
+        return;
+    }
+
+    const aa01Scores = getGroupScore("aa01Questions");
+    const aa02Scores = getGroupScore("aa02Questions");
+    const genScores = getGroupScore("generalQuestions");
+
+    const aa01Sum = calcCategoryScore(aa01Scores);
+    const aa02Sum = calcCategoryScore(aa02Scores);
+    const genSum = calcCategoryScore(genScores);
+
+    document.getElementById("rReviewer").textContent = reviewer;
+    document.getElementById("rReviewee").textContent = reviewee;
+    document.getElementById("rPeriod").textContent = period;
+    document.getElementById("rMonths").textContent = months;
+    document.getElementById("rAA01").textContent = formatScores(aa01Scores) + "（合計：" + aa01Sum + "）";
+    document.getElementById("rAA02").textContent = formatScores(aa02Scores) + "（合計：" + aa02Sum + "）";
+    document.getElementById("rGeneral").textContent = formatScores(genScores) + "（合計：" + genSum + "）";
+    document.getElementById("rBonus").textContent = bonus;
+
+    document.getElementById("resultBox").style.display = "block";
+    document.getElementById("resultBox").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetForm() {
+    document.querySelectorAll(".score-btn.selected").forEach(b => b.classList.remove("selected"));
+    document.getElementById("reviewer").value = "";
+    document.getElementById("reviewPeriod").value = "";
+    document.getElementById("reviewMonths").value = "";
+    document.getElementById("reviewee").value = "";
+    document.getElementById("bonus").value = "0";
+    document.getElementById("resultBox").style.display = "none";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// 初始化考核項目
+createScoreButtons("aa01Questions", AA01, "AA01");
+createScoreButtons("aa02Questions", AA02, "AA02");
+createScoreButtons("generalQuestions", GENERAL, "GEN");
+</script>
+
+</body>
+</html>
